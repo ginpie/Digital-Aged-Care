@@ -1,3 +1,10 @@
+/**
+ * Fall detection feature
+ *
+ * Author: Jinpei Chen
+ *         Yuzhao Li
+ * Date: 02/09/2019
+ */
 package com.example.falldeteciton;
 
 import android.content.Context;
@@ -27,16 +34,18 @@ import java.text.DecimalFormat;
 public class FallDetectionActivity extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager mySensorManager;
-    public Sensor myAccelerometer;
+    private Sensor myAccelerometer;
+    private Sensor myGyroscope;
 
     private final static String TAG = FallDetectionActivity.class.getSimpleName();
     private TextView xText, yText, zText;
+    private TextView xGyro, yGyro, zGyro;
 
     private LineChart myChart;
     private Thread thread;
     private boolean plotData = true;
 
-    /** Call when the activity is first created */
+    /* Call when the activity is first created */
     @Override
     public void onCreate(Bundle savedInstance){
         super.onCreate(savedInstance);
@@ -50,14 +59,25 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
         Log.d(TAG, "onCreate: Initializing accelerometer.");
         myAccelerometer = mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
+        // get an instance of the Gyroscope
+        Log.d(TAG, "onCreate: Initializing gyroscope.");
+        myGyroscope = mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+
         // register the sensor listener
         mySensorManager.registerListener(FallDetectionActivity.this, myAccelerometer, mySensorManager.SENSOR_DELAY_NORMAL);
         Log.d(TAG, "onCreate: Accelerometer listener is registered.");
+
+        mySensorManager.registerListener(FallDetectionActivity.this, myGyroscope, mySensorManager.SENSOR_DELAY_NORMAL);
+        Log.d(TAG, "onCreate: Gyroscope listener is registered.");
 
         // assign TextViews
         xText = (TextView) findViewById(R.id.textViewX);
         yText = (TextView) findViewById(R.id.textViewY);
         zText = (TextView) findViewById(R.id.textViewZ);
+
+        xGyro = (TextView) findViewById(R.id.textViewGyroX);
+        yGyro = (TextView) findViewById(R.id.textViewGyroY);
+        zGyro = (TextView) findViewById(R.id.textViewGyroZ);
 
         // initialize LineChart
         myChart = (LineChart) findViewById(R.id.lineChart);
@@ -125,29 +145,33 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
                 }
             }
         });
-
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (thread != null){
-            thread.interrupt();
-        }
-        mySensorManager.unregisterListener(this);
+        thread.start();
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
-        DecimalFormat df = new DecimalFormat("#.#");
-        float x2 = Float.valueOf(df.format(event.values[0]));
-        float y2 = Float.valueOf(df.format(event.values[1]));
-        float z2 = Float.valueOf(df.format(event.values[2]));
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
+            DecimalFormat df = new DecimalFormat("#.#");
+            float x2 = Float.valueOf(df.format(event.values[0]));
+            float y2 = Float.valueOf(df.format(event.values[1]));
+            float z2 = Float.valueOf(df.format(event.values[2]));
 
-        xText.setText("X: " + x2);
-        yText.setText("Y: " + y2);
-        zText.setText("Z: " + z2);
+            xText.setText("X: " + x2);
+            yText.setText("Y: " + y2);
+            zText.setText("Z: " + z2);
+        }
+        if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+            Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
+            DecimalFormat df = new DecimalFormat("#.#");
+            float x2 = Float.valueOf(df.format(event.values[0]));
+            float y2 = Float.valueOf(df.format(event.values[1]));
+            float z2 = Float.valueOf(df.format(event.values[2]));
+
+            xGyro.setText("X: " + x2);
+            yGyro.setText("Y: " + y2);
+            zGyro.setText("Z: " + z2);
+        }
 
         if (plotData){
             addEntry(event);
@@ -182,9 +206,9 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
         set.setLineWidth(4f);
         set.setColor(Color.DKGRAY);
         set.setHighlightEnabled(false);
-        set.setDrawValues(true);
+        set.setDrawValues(false);
         set.setDrawCircleHole(false);
-        set.setMode(LineDataSet.Mode.LINEAR);
+        set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         set.setCubicIntensity(0.2f);
         return set;
     }
@@ -205,5 +229,14 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
     protected void onResume(){
         super.onResume();
         mySensorManager.registerListener(this, myAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (thread != null){
+            thread.interrupt();
+        }
+        mySensorManager.unregisterListener(this);
     }
 }
