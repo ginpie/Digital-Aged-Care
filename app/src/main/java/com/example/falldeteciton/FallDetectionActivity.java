@@ -1,9 +1,11 @@
 /**
- * Fall detection feature
+ * Fall detection feature - User interface of data demonstration and testing
  *
- * Author: Jinpei Chen
- *         Yuzhao Li
- * Date: 02/09/2019
+ * Authors:         Jinpei Chen
+ *                  Yuzhao Li
+ *
+ * Created data:    02/09/2019
+ * Last modified:   03/09/2019
  */
 package com.example.falldeteciton;
 
@@ -13,10 +15,13 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Legend;
@@ -29,7 +34,9 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
 import org.w3c.dom.Text;
 
+import java.lang.reflect.Array;
 import java.text.DecimalFormat;
+import java.util.LinkedList;
 
 public class FallDetectionActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -38,12 +45,20 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
     private Sensor myGyroscope;
 
     private final static String TAG = FallDetectionActivity.class.getSimpleName();
-    private TextView xText, yText, zText;
-    private TextView xGyro, yGyro, zGyro;
+    private TextView xAcc, yAcc, zAcc, tAcc;
+    private TextView xGyro, yGyro, zGyro, tGyro;
 
     private LineChart myChart;
     private Thread thread;
     private boolean plotData = true;
+
+    private boolean bp = true;
+
+    /* A LinkedList is used to store collected data, each piece of data is
+     * an array of 2 elements: value and timestamp
+     */
+    private LinkedList<Float> data = new LinkedList<>();
+    private LinkedList<Float> time = new LinkedList<>();
 
     /* Call when the activity is first created */
     @Override
@@ -55,29 +70,27 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
         Log.d(TAG, "onCreate: Initializing sensor service.");
         mySensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
-        // get an instance of the Accelerometer
+        // get an instance of the Accelerometer and Gyroscope
         Log.d(TAG, "onCreate: Initializing accelerometer.");
         myAccelerometer = mySensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
-        // get an instance of the Gyroscope
         Log.d(TAG, "onCreate: Initializing gyroscope.");
         myGyroscope = mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
         // register the sensor listener
         mySensorManager.registerListener(FallDetectionActivity.this, myAccelerometer, mySensorManager.SENSOR_DELAY_NORMAL);
         Log.d(TAG, "onCreate: Accelerometer listener is registered.");
-
         mySensorManager.registerListener(FallDetectionActivity.this, myGyroscope, mySensorManager.SENSOR_DELAY_NORMAL);
         Log.d(TAG, "onCreate: Gyroscope listener is registered.");
 
         // assign TextViews
-        xText = (TextView) findViewById(R.id.textViewX);
-        yText = (TextView) findViewById(R.id.textViewY);
-        zText = (TextView) findViewById(R.id.textViewZ);
-
+        xAcc = (TextView) findViewById(R.id.textViewX);
+        yAcc = (TextView) findViewById(R.id.textViewY);
+        zAcc = (TextView) findViewById(R.id.textViewZ);
+        tAcc = (TextView) findViewById(R.id.textViewAcc);
         xGyro = (TextView) findViewById(R.id.textViewGyroX);
         yGyro = (TextView) findViewById(R.id.textViewGyroY);
         zGyro = (TextView) findViewById(R.id.textViewGyroZ);
+        tGyro = (TextView) findViewById(R.id.textViewGyro);
 
         // initialize LineChart
         myChart = (LineChart) findViewById(R.id.lineChart);
@@ -150,33 +163,67 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        float acc = 0f;
+        float gyro = 0f;
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
+//            Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
             DecimalFormat df = new DecimalFormat("#.#");
-            float x2 = Float.valueOf(df.format(event.values[0]));
-            float y2 = Float.valueOf(df.format(event.values[1]));
-            float z2 = Float.valueOf(df.format(event.values[2]));
+            float xA = Float.valueOf(df.format(event.values[0]));
+            float yA = Float.valueOf(df.format(event.values[1]));
+            float zA = Float.valueOf(df.format(event.values[2]));
+            acc = Float.valueOf(df.format((float) Math.sqrt(xA*xA + yA*yA + zA*zA)));
 
-            xText.setText("X: " + x2);
-            yText.setText("Y: " + y2);
-            zText.setText("Z: " + z2);
+            xAcc.setText("X: " + xA);
+            yAcc.setText("Y: " + yA);
+            zAcc.setText("Z: " + zA);
+            tAcc.setText("Acc: " + acc);
+
+            // record data
+            float t = System.nanoTime()/1000000;
+            float d = acc;
+            data.add(d);
+            time.add(t);
+            if (data.size()>20){
+                data.pop();
+                time.pop();
+            }
+//            Log.d(TAG, "onSensorChanged: value: "+ data.toString() + "time: " + time.toString());
+            System.out.println("onSensorChanged: value: "+ data.toString() + "time: " + time.toString());
+
+            // free fall event
+            if (acc<1f && bp) {
+                bp = false;
+                beep();
+                Toast.makeText(FallDetectionActivity.this, R.string.freefall,Toast.LENGTH_SHORT).show();
+                openDialog();
+            }
+            if (acc>3f && !bp) {
+                bp = true;
+            }
         }
         if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
+//            Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
             DecimalFormat df = new DecimalFormat("#.#");
-            float x2 = Float.valueOf(df.format(event.values[0]));
-            float y2 = Float.valueOf(df.format(event.values[1]));
-            float z2 = Float.valueOf(df.format(event.values[2]));
+            float xG = Float.valueOf(df.format(event.values[0]));
+            float yG = Float.valueOf(df.format(event.values[1]));
+            float zG = Float.valueOf(df.format(event.values[2]));
+            gyro = Float.valueOf(df.format((float) Math.sqrt(xG*xG + yG*yG + zG*zG)));
 
-            xGyro.setText("X: " + x2);
-            yGyro.setText("Y: " + y2);
-            zGyro.setText("Z: " + z2);
+            xGyro.setText("X: " + xG);
+            yGyro.setText("Y: " + yG);
+            zGyro.setText("Z: " + zG);
+            tGyro.setText("Gyro: " + gyro);
         }
 
         if (plotData){
             addEntry(event);
             plotData = false;
         }
+    }
+
+    public void openDialog() {
+        FallDialog fd = new FallDialog();
+        fd.show(getSupportFragmentManager(), "alert dialog");
     }
 
     private void addEntry(SensorEvent event){
@@ -238,5 +285,10 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
             thread.interrupt();
         }
         mySensorManager.unregisterListener(this);
+    }
+
+    protected void beep(){
+        ToneGenerator toneGen = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
+        toneGen.startTone(ToneGenerator.TONE_CDMA_PIP,150);
     }
 }
