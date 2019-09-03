@@ -88,10 +88,10 @@
         android:id="@+id/textViewGyro"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="128dp"
-        android:textSize="24dp"
+        android:layout_marginLeft="64dp"
         android:text="Gyro:"
-        app:layout_constraintTop_toTopOf="@id/textViewAcc"
-        app:layout_constraintLeft_toRightOf="@id/textViewAcc"/>
+        android:textSize="24dp"
+        app:layout_constraintLeft_toRightOf="@id/textViewAcc"
+        app:layout_constraintTop_toTopOf="@id/textViewAcc" />
 
 </android.support.constraint.ConstraintLayout>
