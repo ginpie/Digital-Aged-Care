@@ -59,6 +59,7 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
      */
     private LinkedList<Float> data = new LinkedList<>();
     private LinkedList<Float> time = new LinkedList<>();
+    private LinkedList<Float> dtime = new LinkedList<>();
 
     /* Call when the activity is first created */
     @Override
@@ -77,7 +78,7 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
         myGyroscope = mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
         // register the sensor listener
-        mySensorManager.registerListener(FallDetectionActivity.this, myAccelerometer, mySensorManager.SENSOR_DELAY_NORMAL);
+        mySensorManager.registerListener(FallDetectionActivity.this, myAccelerometer, mySensorManager.SENSOR_DELAY_FASTEST);
         Log.d(TAG, "onCreate: Accelerometer listener is registered.");
         mySensorManager.registerListener(FallDetectionActivity.this, myGyroscope, mySensorManager.SENSOR_DELAY_NORMAL);
         Log.d(TAG, "onCreate: Gyroscope listener is registered.");
@@ -181,14 +182,21 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
             // record data
             float t = System.nanoTime()/1000000;
             float d = acc;
+            if (time.size()>0)  {
+                dtime.add(t - time.peekLast());
+            }else{
+                dtime.add(t);
+            }
             data.add(d);
             time.add(t);
             if (data.size()>20){
                 data.pop();
                 time.pop();
+                dtime.pop();
             }
+
 //            Log.d(TAG, "onSensorChanged: value: "+ data.toString() + "time: " + time.toString());
-            System.out.println("onSensorChanged: value: "+ data.toString() + "time: " + time.toString());
+            System.out.println("onSensorChanged: value: "+ data.toString() + "time: " + time.toString() + " dtime: "+dtime.toString());
 
             // free fall event
             if (acc<1f && bp) {
@@ -201,6 +209,8 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
                 bp = true;
             }
         }
+
+        // collect Gyroscope data
         if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
 //            Log.d(TAG, "onSensorChanged: ||| X:" + event.values[0] + ", Y:" + event.values[1] + ", Z:" + event.values[2]);
             DecimalFormat df = new DecimalFormat("#.#");
