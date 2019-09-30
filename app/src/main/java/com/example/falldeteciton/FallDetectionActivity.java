@@ -54,6 +54,8 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
 
     private boolean bp = true;
 
+    private int MAX_ENTRY = 100;
+
     /* A LinkedList is used to store collected data, each piece of data is
      * an array of 2 elements: value and timestamp
      */
@@ -78,7 +80,7 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
         myGyroscope = mySensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
         // register the sensor listener
-        mySensorManager.registerListener(FallDetectionActivity.this, myAccelerometer, mySensorManager.SENSOR_DELAY_FASTEST);
+        mySensorManager.registerListener(FallDetectionActivity.this, myAccelerometer, mySensorManager.SENSOR_DELAY_NORMAL);
         Log.d(TAG, "onCreate: Accelerometer listener is registered.");
         mySensorManager.registerListener(FallDetectionActivity.this, myGyroscope, mySensorManager.SENSOR_DELAY_NORMAL);
         Log.d(TAG, "onCreate: Gyroscope listener is registered.");
@@ -240,7 +242,7 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
         LineData lineData = myChart.getData();
 
         if (lineData != null){
-            ILineDataSet set = lineData.getDataSetByIndex(0);
+            LineDataSet set = (LineDataSet) lineData.getDataSetByIndex(0);
 
             if (set == null){
                 set = createSet();
@@ -249,6 +251,12 @@ public class FallDetectionActivity extends AppCompatActivity implements SensorEv
 
             // add entries of xValues to the data
             lineData.addEntry(new Entry(set.getEntryCount(), event.values[0]), 0);
+            if (set.getEntryCount() == MAX_ENTRY){
+                set.removeFirst();
+                for (Entry entry : set.getValues() )
+                    entry.setX(entry.getX() - 1);
+            }
+
             // enable the chart know when its data has changed
             lineData.notifyDataChanged();
             myChart.notifyDataSetChanged();
