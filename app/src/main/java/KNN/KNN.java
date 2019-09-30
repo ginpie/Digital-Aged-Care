@@ -61,6 +61,7 @@ public class KNN {
                     values[i] = Double.parseDouble(split[i+1]);
                 trainfeatures.add(values);
                 trainlabel.add(split[0]);
+                number_Of_Label++;
             }
             readFile.close();
         } catch (FileNotFoundException e) {
@@ -83,7 +84,6 @@ public class KNN {
                 for (int i = 0; i < split.length; i++)
                     feature[i] = Double.parseDouble(split[i]);
                 testfeatures.add(feature);
-                number_Of_Label++;
             }
             testreadFile.close();
         } catch (FileNotFoundException e) {
@@ -137,7 +137,6 @@ public class KNN {
             }
         }
 
-
         public int wrappingUp(){
             try{
             loadtrainData(filename);
@@ -166,13 +165,15 @@ public class KNN {
                 System.out.println(element);
                 Integer indexOnClone = distancesClone.indexOf(element);
                 String label = trainlabel.get(indexOnClone);
-                if (label == "1.0") {
+                System.out.println(label);
+                if (Double.parseDouble(label) == 1.0) {
                     CLASS_1++;
                 }
-                else if (label == "0.0") {
+                else if (Double.parseDouble(label) == 0.0) {
                     CLASS_2++;
                 }
             }
+            System.out.println(CLASS_1+" "+CLASS_2);
             if (CLASS_1 > CLASS_2){
                 return 1;
             }
