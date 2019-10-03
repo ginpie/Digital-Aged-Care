@@ -1,4 +1,4 @@
-/**
+package com.example.falldeteciton; /**
  * K-Nearest Neighbor (KNN) method - Data training and testing
  *
  * Authors:         Jinpei Chen
@@ -8,8 +8,6 @@
  * Last modified:   30/09/2019
  */
 
-import com.example.falldeteciton.BuildConfig;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,7 +15,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,8 +24,8 @@ public class KNN {
     String testfilename;
     private LinkedList<Float> test;
 
-    public KNN(String filename, LinkedList<Float> test){
-        this.filename = filename;
+    public KNN(LinkedList<Float> test){
+//        this.filename = filename;
 //        this.testfilename = testfilename;
         this.test = test;
     }
@@ -50,7 +47,7 @@ public class KNN {
     // loading training data and extracting features and label for training dataset
     private void loadtrainData(String filename) throws IOException {
 
-        File file = new File(filename);
+        File file = new File("./app/src/main/java/KNN/fall_data_101.csv");
 
         try {
             BufferedReader readFile = new BufferedReader(new FileReader(file));

@@ -18,6 +18,7 @@ import com.example.falldeteciton.R;
 public class MainActivity extends AppCompatActivity {
 
     private Button button;
+    private Button button2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,10 +32,23 @@ public class MainActivity extends AppCompatActivity {
                 openActivity();
             }
         });
+
+        button2 = findViewById(R.id.b2);
+        button2.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                openActivity2();
+            }
+        });
     }
 
     public void openActivity(){
         Intent intent = new Intent(this, FallDetectionActivity.class);
+        startActivity(intent);
+    }
+
+    public void openActivity2(){
+        Intent intent = new Intent(this, FallDetectionActivity2.class);
         startActivity(intent);
     }
 }
